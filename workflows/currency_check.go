@@ -1,0 +1,86 @@
+package workflows
+
+import (
+	"context"
+	"go.temporal.io/sdk/activity"
+	"go.temporal.io/sdk/converter"
+	"go.temporal.io/sdk/workflow"
+	"time"
+)
+
+// CurrencyVolatileCheckWorkflow fetches current currency rates for defined currencies
+// and calculates currency rate in multiple floating windows:
+//
+//	1 day, 3 days, 7 days, 1 month
+func CurrencyVolatileCheckWorkflow(ctx workflow.Context, currencyFrom string, currencyTo string) error {
+	logger := workflow.GetLogger(ctx)
+
+	ao := workflow.ActivityOptions{
+		StartToCloseTimeout: 10 * time.Second,
+	}
+
+	subCtx := workflow.WithActivityOptions(ctx, ao)
+
+	// get current currency rate
+	workflow.ExecuteActivity()
+
+	// get currency rate for 1 day
+
+	// get currency rate for 3 days
+
+	// get currency rate for 7 days
+
+	// get currency rate for 1 month
+
+	// check if currency rate is volatile
+
+	// if currency rate is volatile and higher than previous days and send an alert in telegram
+
+	// if currency rate is not volatile, do nothing
+
+	return nil
+}
+
+// SampleScheduleWorkflow executes on the given schedule
+func SampleScheduleWorkflow(ctx workflow.Context) error {
+
+	workflow.GetLogger(ctx).Info("Schedule workflow started.", "StartTime", workflow.Now(ctx))
+
+	ao := workflow.ActivityOptions{
+		StartToCloseTimeout: 10 * time.Second,
+	}
+	ctx1 := workflow.WithActivityOptions(ctx, ao)
+
+	info := workflow.GetInfo(ctx1)
+
+	// Workflow Executions started by a Schedule have the following additional properties appended to their search attributes
+	//lint:ignore SA1019 - this is a sample
+	scheduledByIDPayload := info.SearchAttributes.IndexedFields["TemporalScheduledById"]
+	var scheduledByID string
+	err := converter.GetDefaultDataConverter().FromPayload(scheduledByIDPayload, &scheduledByID)
+	if err != nil {
+		return err
+	}
+	//lint:ignore SA1019 - this is a sample
+	startTimePayload := info.SearchAttributes.IndexedFields["TemporalScheduledStartTime"]
+	var startTime time.Time
+	err = converter.GetDefaultDataConverter().FromPayload(startTimePayload, &startTime)
+	if err != nil {
+		return err
+	}
+
+	err = workflow.ExecuteActivity(ctx1, DoSomething, scheduledByID, startTime).Get(ctx, nil)
+	if err != nil {
+		workflow.GetLogger(ctx).Error("schedule workflow failed.", "Error", err)
+		return err
+	}
+
+	return nil
+}
+
+// DoSomething is an Activity
+func DoSomething(ctx context.Context, scheduleByID string, startTime time.Time) error {
+	activity.GetLogger(ctx).Info("Schedulde job running.", "scheduleByID", scheduleByID, "startTime", startTime)
+	// Query database, call external API, or do any other non-deterministic action.
+	return nil
+}
